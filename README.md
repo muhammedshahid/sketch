@@ -16,13 +16,13 @@ This project allows users to convert images into pencil sketches using **client-
 - **IndexedDB Storage**: Stores the processed results and variations locally in the user's browser for easy retrieval.
 
 ## How It Works
-**Step 1: Grayscale Conversion**: The image is first converted into grayscale to prepare for edge detection.
-**Step 2: Sobel Operator**: Detects edges in the image and enhances the sketch effect.
-**Step 3: Gaussian Blur**: Applied to the image to soften the edges and reduce noise.
-**Step 4: Invert**: Inverts the grayscale image to create a light/dark pencil effect.
-**Step 5: Histogram Equalization**: Enhances the brightness and contrast for better visual appeal.
-**Step 6: Adjustment**: Brightness and contrast sliders allow users to fine-tune the final output.
-**Step 7: Version Storage**: Users can store different versions of their image variations locally using IndexedDB.
+- **Step 1: Grayscale Conversion**: The image is first converted into grayscale to prepare for edge detection.
+- **Step 2: Sobel Operator**: Detects edges in the image and enhances the sketch effect.
+- **Step 3: Gaussian Blur**: Applied to the image to soften the edges and reduce noise.
+- **Step 4: Invert**: Inverts the grayscale image to create a light/dark pencil effect.
+- **Step 5: Histogram Equalization**: Enhances the brightness and contrast for better visual appeal.
+- **Step 6: Adjustment**: Brightness and contrast sliders allow users to fine-tune the final output.
+- **Step 7: Version Storage**: Users can store different versions of their image variations locally using IndexedDB.
 
 ## Technologies Used
 - **JavaScript**: Vanilla JS used for implementing all algorithms and features.
