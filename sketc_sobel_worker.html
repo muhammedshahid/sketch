@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pencil Sketch(Sobel) Effect</title>
+    <style>
+      :root {
+        --l1: #3a3d44;
+        --l2: #3b3e45;
+        --l3: #383b42;
+        --c1: #F0EAD6;
+        --c2:  #F5F5DC;
+      }
+      *,
+      *:before,
+      *:after {
+        box-sizing: border-box;
+        transition: all 0s ease 0s;
+        font-family: 'Gochi Hand', Arial, serif;
+      }
+
+      body {
+        margin: 0;
+        padding: 0;
+        /* width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center; */
+        /* background: linear-gradient(135deg, var(--l1), var(--l2), var(--l3)); */
+        background-color: #fff;
+      }
+
+      body:before,
+      body:after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        /* background: repeating-conic-gradient(
+            #0002 0.000095%,
+            #fff0 0.0005%,
+            #fff0 0.005%,
+            #fff0 0.0005%
+          ),
+          repeating-conic-gradient(
+            #0002 0.00001%,
+            #fff0 0.00009%,
+            #fff0 0.00075%,
+            #fff0 0.000025%
+          ); */
+          background: repeating-conic-gradient(
+            #F0EAD6 0.000095%,
+            #F5F5DC 0.0005%,
+            #F5F5DC 0.005%,
+            #F5F5DC 0.0005%
+          ),
+          repeating-conic-gradient(
+            #F0EAD6 0.00001%,
+            #F5F5DC 0.00009%,
+            #F5F5DC 0.00075%,
+            #F5F5DC 0.000025%
+          );
+        opacity: 0.75;
+        filter: blur(0.75px);
+        z-index: -1;
+      }
+      div[id^='img_'] {
+        position: relative;
+        /* width: 480px;
+        min-height: 360px; */
+      }
+      /* div[id^='img_'] img {
+        width: 100%;
+        height: auto;
+      }
+      div[id^='img_'] img {
+        object-fit: cover;
+      } */
+      .preloader {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: url('preloader3.svg') center center no-repeat;
+        background-size: auto;
+      }
+
+      .showpreloader {
+        background-color: #d9d9d9;
+      }
+      .hidepreloader {
+        background-color: revert;
+      }
+
+      .showpreloader > *:not(.preloader) {
+        /* display: none; */
+        visibility: hidden;
+      }
+      .showpreloader .preloader {
+        /* display: revert; */
+        visibility: visible;
+      }
+
+      .hidepreloader > *:not(.preloader) {
+        /* display: revert; */
+        visibility: visible;
+      }
+      .hidepreloader .preloader {
+        /* display: none; */
+        visibility: hidden;
+      }
+      
+      input[type='file'] {
+        width: 350px;
+        max-width: 100%;
+        color: #444;
+        padding: 5px;
+        background: #fff;
+        border-radius: 10px;
+        border: 1px solid #555;
+      }
+
+      input[type='file']::file-selector-button {
+        margin-right: 20px;
+        border: none;
+        background: #084cdf;
+        padding: 10px 20px;
+        border-radius: 10px;
+        color: #fff;
+        cursor: pointer;
+        transition: background 0.2s ease-in-out;
+      }
+
+      input[type='file']::file-selector-button:hover {
+        background: #0d45a5;
+      }
+
+      .grid-container {
+        display: grid;
+        grid-template-columns: repeat(
+          auto-fit,
+          minmax(calc(25% - 10px), 0.3fr)
+        ); /* 4 columns */
+        gap: 10px; /* Adjust gap as needed */
+        justify-items: center;
+      }
+
+      .grid-item {
+        display: flex;
+        background-color: #ffffff08;
+        justify-content: flex-start;
+        border: 1px dashed #595b5e;
+        align-content: center;
+        flex-direction: column;
+        align-items: center;
+        max-width: calc(100% - 20px);
+        /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
+        box-shadow: rgba(9, 30, 66, 0.25) 0px 4px 8px -2px, rgba(9, 30, 66, 0.08) 0px 0px 0px 1px;
+      }
+
+      .grid-item img {
+        max-width: 100%;
+        max-height: 100%;
+        width: auto;
+        height: auto;
+      }
+    </style>
+  </head>
+  <body>
+    <input type="file" id="fileInput" accept="image/*" multiple />
+    <div id="image-container" class="grid-container">
+      <!-- <div id="img_xtbs63umq" class="grid-item">
+        <div class="sliderContainer"></div>
+        <div class="sliderContainer"></div>
+        <img src="" alt="" />
+      </div> -->
+    </div>
+
+    <!-- <script src="./indexedDB.js"></script> -->
+
+    <script>
+     
+      const fileInput = document.getElementById('fileInput')
+      const imageContainer = document.getElementById('image-container')
+
+      function downloadCanvas(imgTag) {
+        let canvas = document.createElement('canvas')
+        let ctx = canvas.getContext('2d')
+        let type = imgTag.parentElement.querySelector('select').value.trim()
+        canvas.width = imgTag.naturalWidth
+        canvas.height = imgTag.naturalHeight
+        ctx.imageSmoothingEnabled = true
+        ctx.drawImage(imgTag, 0, 0, canvas.width, canvas.height)
+        let dataURL = canvas.toDataURL('image/' + type)
+        let link = document.createElement('a')
+        link.href = dataURL
+        link.download = 'canvas_image.' + type
+        link.click()
+      }
+      
+      function generateRandomId() {
+        return 'img_' + Math.random().toString(36).substr(2, 9)
+      }
+
+      function preloader(id, status) {
+        let div = document.getElementById(id)
+        if (status == 'show') {
+          div.classList.remove('hidepreloader')
+          div.classList.add('showpreloader')
+        } else {
+          div.classList.remove('showpreloader')
+          div.classList.add('hidepreloader')
+        }
+      }
+
+      function makeTemplate(id) {
+        let div = document.createElement(`div`)
+        div.id = id
+        div.classList.add("showpreloader", "grid-item")
+        let template = `
+        <img alt="Selected Imaged" />
+        <div class="sliderContainer">
+          <span>brightness</span>
+          <input type="range" data-id="brightness" class="slider" min="-100" max="100" value="0" />
+          <span class="sliderDisplay">0</span>
+        </div>
+        <div class="sliderContainer">
+          <span>contrast</span>
+          <input type="range" data-id="contrast" class="slider" min="-100" max="100" value="0" />
+          <span class="sliderDisplay">0</span>
+        </div>
+        <div>
+          <select name="download">
+            <option value="png" selected>PNG</option>
+            <option value="jpeg">JPEG</option>
+          </select>
+          <button class="download">download</button>
+          <button class="save">save</button>
+        </div>
+        <div class="preloader"></div>
+        <select name="version">
+          <option value="0" selected>Sketch</option>
+        </select>
+        `
+        div.innerHTML = template.trim()
+        return div
+      }
+      
+      function imageReader(file) {
+        const reader = new FileReader()
+        let divId = generateRandomId()
+        imageContainer.appendChild(makeTemplate(divId))
+        reader.onload = function (e) {
+          let image = new Image()
+          image.onload = function () {
+            URL.revokeObjectURL(this.src)
+            sendMsg({
+              cmd: 'sobelEdgeDetection',
+              param: [getImageData(this), 3],
+              callback: { fn: 'appendImg', bind: divId }
+            })
+          }
+          image.src = URL.createObjectURL(file) // input image
+        }
+        reader.readAsDataURL(file)
+      }
+
+      function appendImg(imageData){
+        let div = imageContainer.querySelector(`#${this}`)
+        let sliders = div.querySelectorAll('input[type="range"]')
+        let brightnessSlider = div.querySelector('input[data-id="brightness"]')
+        let contrastSlider = div.querySelector('input[data-id="contrast"]')
+        let downloadButton = div.querySelector('.download')
+        let saveButton = div.querySelector('.save')
+        let versionSelect = div.querySelector('select[name="version"]')
+
+        let img = div.querySelector('img')
+        img.onload = function () {
+          preloader(img.parentElement.id, 'hide')
+          URL.revokeObjectURL(this.src)
+          //let imageData = getImageData(this) // get it from db to save space
+          
+          brightnessSlider.addEventListener('input', (e) => {
+            let input = e.target
+            const brightness = parseInt(input.value)
+            input.parentElement.querySelector('.sliderDisplay').textContent = brightness
+            sendMsg({
+              cmd: 'adjustBrightnessAndContrast',
+              param: [brightness, parseInt(contrastSlider.value)],
+              callback: { fn: 'update', bind: [this.parentElement.id] }
+            })
+            preloader(this.parentElement.id, 'show')
+          })
+
+          contrastSlider.addEventListener('input', (e) => {
+            let input = e.target
+            const contrast = parseInt(input.value)
+            input.parentElement.querySelector('.sliderDisplay').textContent = contrast
+            sendMsg({
+              cmd: 'adjustBrightnessAndContrast',
+              param: [parseInt(brightnessSlider.value), contrast],
+              callback: { fn: 'update', bind: [this.parentElement.id] }
+            })
+            preloader(this.parentElement.id, 'show')
+          })
+
+          downloadButton.addEventListener('click', () => {
+            downloadCanvas(this)
+          })
+
+          saveButton.addEventListener('click', () => {
+            let imageData = getImageData(this)
+            sendMsg({
+              cmd : 'save',
+              param: [imageData],
+              callback: { fn: 'saved', bind: [this.parentElement.id] }
+            })
+            //console.log(imageData)
+          })
+
+          //imageContainer.appendChild(div)
+          this.onload = function () {
+            preloader(this.parentElement.id, 'hide')
+            if (this.src) {
+              //console.log(`image updated`)
+              URL.revokeObjectURL(this.src)
+            }
+          }
+
+        }
+
+        versionSelect.addEventListener('change', function(event) {
+          const selectedOption = parseInt(event.target.selectedOptions[0].value)-1;
+          sendMsg({
+            cmd : 'getVersion',
+            param : [selectedOption],
+            callback: { fn: 'versionChange', bind: [this.parentElement.id]}
+          })
+        });
+
+        makecanvas(imageData).toBlob(function (blob) {
+          img.src = URL.createObjectURL(blob)
+        }, 'image/png')
+        //img.src = canvas.toDataURL() // sobel canvas sketch image
+
+      }
+
+      function makecanvas(imageData) {
+        let canvas = document.createElement(`canvas`)
+        canvas.width = imageData.width
+        canvas.height = imageData.height
+        let ctx = canvas.getContext('2d')
+        ctx.putImageData(imageData, 0, 0)
+        return canvas
+      }
+
+      function getImageData(image){
+        let canvas = document.createElement(`canvas`)
+        canvas.width = image.naturalWidth
+        canvas.height = image.naturalHeight
+        let ctx = canvas.getContext('2d')
+        ctx.drawImage(image, 0, 0)
+        return ctx.getImageData(0, 0, canvas.width, canvas.height)
+      }
+
+      function prepareImg(arryBuffer, dimensions){
+        let imageData = new ImageData(new Uint8ClampedArray(arryBuffer), dimensions[0], dimensions[1])
+        imageContainer.appendChild(makeTemplate(this))
+        appendImg.apply(this, [imageData])
+      }
+
+      function update(imageData) {
+        //console.log(this[0])
+        let img = document.querySelector(`#${this[0]} img`)
+        makecanvas(imageData).toBlob(function (blob) {
+          img.src = URL.createObjectURL(blob)
+        }, 'image/png')
+      }
+
+      function resetParameters(){
+        let parent = document.querySelector(`#${this}`)
+        parent.querySelector('input[fake-id="brightness"]').value = 0
+        parent.querySelector('span[fake-id="brightnessDisplay"]').textContent = 0
+        parent.querySelector('input[fake-id="contrast"]').value = 0
+        parent.querySelector('span[fake-id="contrastDisplay"]').textContent = 0
+      }
+
+      function versionChange(imageData){
+        update.apply([this], [imageData])
+        resetParameters.apply(this)
+      }
+
+      function updateVersion(counts, selected){
+        let select = document.querySelector(`#${this} > [name="version"]`)
+        let options = '<option value="0">Sketch</option>'
+        for(let i=0; i < counts; i++){
+          options += `<option value=${i+1}>Version ${i+1}</option>`
+        }
+        select.innerHTML = options
+        select.querySelector(`option[value="${parseInt(selected+1)}"]`).selected = true
+      }
+
+      function saved(status) {
+        //let div = document.querySelector(this.id)
+        console.log(this, `saved::`, status)
+      }
+
+      function initWorker() {
+        console.log(`init worker`)
+        const port = new SharedWorker('./sobel_worker.js').port
+        port.addEventListener('message', receiveMsg, false)
+        port.addEventListener('error', workerError, false)
+        sendMsg = sendMsg.bind(port)
+        port.start()
+      }
+
+      function workerError(error) {
+        console.error('Error in shared worker:', error)
+      }
+
+      function receiveMsg(event) {
+        let data = event.data
+        window[data.callback.fn].apply(data.callback.bind, [...data.param])
+      }
+
+      function sendMsg(message) {
+        this.postMessage(message)
+      }
+
+      if (typeof SharedWorker !== 'undefined') {
+        initWorker()
+      } else {
+        console.log('Shared workers are not supported in this browser.')
+      }
+
+      fileInput.addEventListener('change', function (event) {
+        const files = [...event.target.files]
+        if (files.length) {
+          files.forEach(imageReader)
+        }
+      })
+    </script>
+  </body>
+</html>
